@@ -73,19 +73,20 @@ void tokenize(const char *expr)
         {
             word[j++] = expr[i++];
         }
-        if (j > 0) // تابع
+        if (j > 0)
         {
             strcpy(tokens[token_count].string_value, word);
             if (strcmp(word, 'sin') == 0 || strcmp(word, 'cos') == 0 || strcmp(word, 'abs') == 0 ||
                 strcmp(word, 'tan') == 0 || strcmp(word, 'ln') == 0 || strcmp(word, 'sqrt') == 0 ||
-                strcmp(word, 'exp') == 0 || strcmp(word, 'pow') == 0)
+                strcmp(word, 'exp') == 0 || strcmp(word, 'pow') == 0 || strcmp(word, 'cot') == 0 ||
+                strcmp(word, 'sinh') == 0 || strcmp(word, 'cosh') == 0 || strcmp(word, 'tanh') == 0 || strcmp(word, 'log') == 0)
             {
-                tokens[token_count].type = function;
+                tokens[token_count].type = function; // تابع
             }
             else
             {
-                tokens[token_count].type = cell;
-            } // سلول
+                tokens[token_count].type = cell; // سلول
+            }
         }
         if (isdigit(expr[i])) // اضافه کردن عدد سلول
         {
@@ -115,4 +116,66 @@ int parentheses()
             return 0;
     }
     return (valid == 0);
+}
+
+// در این تابع توکن ها به ترتیب postfix قرار میگیرند تا قابل محاسبه باشند
+postfix POSTFIX(token *tokens, int token_count)
+{
+    token stack[token_max];
+    int top = -1; // اندیس بالاترین عنصر: خالی است
+    postfix postfixs = {.count = 0};
+
+    for (int i = 0; i < token_count; i++)
+    {
+        switch (tokens[i].type)
+        {
+
+        // سلول یا عدد مستقیم به خروجی منتقل میشن.
+        case number:
+        case cell:
+            postfixs.output[postfixs.count++] = tokens[i];
+            break;
+
+        // توابع به پشته ارسال میشن
+        case function:
+            stack[++top] = tokens[i];
+            break;
+
+        case opearator:
+            // وقتی عملگر با الویت بالاتر قبلش است. خارج میشه و به خروجی منتقل میشه
+            while (top >= 0 && stack[top].type == opearator)
+            {
+                postfixs.output[postfixs.count++] = stack[top--];
+            }
+            // عملگر فعلی به پشته وارد میشود
+            stack[top++] = tokens[i];
+            break;
+
+        // پرانتز باز به پشته منتقل می شود
+        case paren_open:
+            stack[top++] = tokens[i];
+            break;
+
+        case paren_close:
+            // عملگرها تا زمانی که به پرانتز باز برسیم به خروجی منتقل میشوند.
+            while (top >= 0 && stack[top].type != paren_open)
+            {
+                postfixs.output[postfixs.count++] = stack[top--];
+            }
+            // پرانتز باز را از پشته حذف می کنیم
+            if (top >= 0 && stack[top].type == paren_open)
+                top--;
+            // اگر تابعی بلافاصله بعد از پرانتز بیایید ان هم باید به خروجی منتقل شود: sin(A1+3)
+            if (top >= 0 && stack[top].type == function)
+                postfixs.output[postfixs.count++] = stack[top--];
+            break;
+        }
+    }
+    // هرچه در پشته باقیمانده به خروجی اضافه می کنیم
+    while ((top >= 0))
+    {
+        postfixs.output[postfixs.count++] = stack[top--];
+    }
+
+    return postfixs;
 }
