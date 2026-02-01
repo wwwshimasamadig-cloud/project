@@ -3,7 +3,7 @@
 #include <math.h>
 #include <string.h>
 #include <stdlib.h>
-#define max 100
+#define max 256
 // ساختار ریاضی
 typedef struct{
     double (*fun1)(double);
@@ -79,7 +79,7 @@ erors pop(memorystack *sone, double *value){
     return log10(n);
 }
 // برای تابع لگاریتم بر مبنا عدد ای
-double safe_ln(double n){
+double truth_ln(double n){
     if (n<=0)
     {return NAN;}
     return log(n);}
@@ -99,18 +99,18 @@ double truth_sqrt(double n){
     return 1.0/tan_val;
 } 
 funmath math_functions[]={
-    {"sin", truth_sin},
-    {"cos", truth_cos},
-{"tan", truth_tan},
-    {"cot", truth_cot},
-    {"sqrt", truth_sqrt},
-    {"log", truth_log},
-        {"ln", truth_ln},
-    {"exp", truth_exp},
-    {"abs", truth_abs},
-{"sinh", truth_sinh},
-    {"cosh", truth_cosh},
-    {"tanh", truth_tanh},
+    {truth_sin , "sin"},
+    {truth_cos,"cos"},
+{ truth_tan,"tan"},
+    { truth_cot,"cot"},
+    {truth_sqrt,"sqrt"},
+    { truth_log,"log"},
+        { truth_ln, "ln"},
+    {truth_exp,"exp"},
+    {truth_abs,"abs" },
+{ truth_sinh,"sinh"},
+    { truth_cosh ,"cosh"},
+    {truth_tanh,"tanh"},
     {NULL,NULL}
     };
 // تابع ریاضی
@@ -126,7 +126,7 @@ erors calculate(const char **input,int countinput,double *output){
     erors status;
     double action1,action2,value;
     for (int i=0; i<countinput; ++i)
-        {const char *input=input[i];
+        {const char *took=input[i];
         char *endptr;
         value=strtod(input, &endptr);
         if (*endptr == '\0' && input!= endptr)
@@ -164,7 +164,7 @@ erors calculate(const char **input,int countinput,double *output){
                 }
                 if (push(&stack,action1/action2)!=succetion) return action_peroblem;
             } else
-                {funmath *mf = find_function(input);
+                {funmath *mf =findfun(input);
                 if (mf != NULL)
                     {if (pop(&stack,&action1)!=succetion) 
                         return action_peroblem;
