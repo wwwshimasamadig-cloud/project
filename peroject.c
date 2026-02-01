@@ -113,3 +113,75 @@ funmath math_functions[]={
     {"tanh", truth_tanh},
     {NULL,NULL}
     };
+// تابع ریاضی
+funmath* findfun(const char *name1){
+    for (int i=0; math_functions[i].name1 !=NULL;++i)
+        {if (strcmp(name1,math_functions[i].name1) == 0) 
+            {return &math_functions[i];}}
+    return NULL; }
+// خطا محاسبه 
+erors calculate(const char **input,int countinput,double *output){
+    memorystack stack;
+    inistialzationstack(&stack);
+    erors status;
+    double action1,action2,value;
+    for (int i=0; i<countinput; ++i)
+        {const char *input=input[i];
+        char *endptr;
+        value=strtod(input, &endptr);
+        if (*endptr == '\0' && input!= endptr)
+            {if (push(&stack, value) != succetion) 
+                return action_peroblem;}
+        else{
+            if (strcmp(input, "+") == 0){
+                if (pop(&stack, &action2)!=succetion) 
+                    return action_peroblem;
+                    if (pop(&stack, &action1)!= succetion)
+                    return action_peroblem;
+                if (push(&stack, action1 + action2)!=succetion)
+                    return action_peroblem;
+            } else if(strcmp(input, "-")==0){
+                if (pop(&stack, &action2)!=succetion)
+                    return action_peroblem;
+                    if (pop(&stack, &action1)!=succetion)
+                    return action_peroblem;
+                if (push(&stack, action1 -action2)!=succetion)
+                    return action_peroblem;
+            } else if (strcmp(input, "*") == 0){
+                if (pop(&stack, &action2)!=succetion)
+                    return action_peroblem;
+                    if (pop(&stack, &action1)  !=succetion)
+                    return action_peroblem;
+                if(push(&stack, action1 * action2)!=succetion)
+                    return action_peroblem;}
+            else if (strcmp(input, "/") == 0){
+                if (pop(&stack, &action2) != succetion)
+                    return action_peroblem;
+                if (pop(&stack, &action1) != succetion)
+                    return action_peroblem;
+                    if (fabs(action2) < 1e-15)
+                    {return devision_peroblem;
+                }
+                if (push(&stack,action1/action2)!=succetion) return action_peroblem;
+            } else
+                {funmath *mf = find_function(input);
+                if (mf != NULL)
+                    {if (pop(&stack,&action1)!=succetion) 
+                        return action_peroblem;
+                    double fun_result = mf->fun1(action1);
+                    if (isnan(fun_result)) {
+                        {return domain_peroblem;
+                    }
+                    if (push(&stack,fun_result) !=succetion) return action_peroblem;
+                } else {
+                    return input_peroblem;
+                }}}}
+    if (stack.most!= 0)
+        {return action_peroblem;
+    }
+    if (pop(&stack, output)!=succetion)
+        {return phraise_peroblem;}
+     if ( isnan(*output))
+        {return domain_peroblem
+    ;}
+    return succetion;}}
