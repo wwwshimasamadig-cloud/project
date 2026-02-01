@@ -7,7 +7,7 @@
 typedef enum
 {
     number,
-    opearator,
+    operator,
     cell,
     paren_open,
     paren_close,
@@ -25,15 +25,16 @@ typedef struct
 token tokens[token_max];
 int token_count = 0;
 
-//توکن ها با ترتیبی قابل محاسبه
-typedef struct {
+// توکن ها با ترتیبی قابل محاسبه
+typedef struct
+{
     token output[token_max];
     int count;
-}postfix;
+} postfix;
 
 // توابع
 void tokenize(const char *expr);
 int parentheses();
-postfix POSTFIX(token *tokens , int count);
+postfix POSTFIX(token *tokens, int count);
 
 #endif

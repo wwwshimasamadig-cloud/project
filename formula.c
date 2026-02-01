@@ -42,7 +42,8 @@ void tokenize(const char *expr)
         // پرانتز باز
         if (expr[i] == '(')
         {
-            strcpy(tokens[token_count].string_value, '(');
+            tokens[token_count].string_value[0] = expr[i];
+            tokens[token_count].string_value[1] = '\0';
             tokens[token_count++].type = paren_open;
             i++;
             continue;
@@ -50,7 +51,8 @@ void tokenize(const char *expr)
         // پرانتز بسته
         if (expr[i] == ')')
         {
-            strcpy(tokens[token_count].string_value, ')');
+            tokens[token_count].string_value[0] = expr[i];
+            tokens[token_count].string_value[1] = '\0';
             tokens[token_count++].type = paren_close;
             i++;
             continue;
@@ -61,7 +63,7 @@ void tokenize(const char *expr)
         {
             tokens[token_count].string_value[0] = expr[i];
             tokens[token_count].string_value[1] = '\0';
-            tokens[token_count].type = opearator;
+            tokens[token_count++].type = operator;
             i++;
             continue;
         }
@@ -76,10 +78,10 @@ void tokenize(const char *expr)
         if (j > 0)
         {
             strcpy(tokens[token_count].string_value, word);
-            if (strcmp(word, 'sin') == 0 || strcmp(word, 'cos') == 0 || strcmp(word, 'abs') == 0 ||
-                strcmp(word, 'tan') == 0 || strcmp(word, 'ln') == 0 || strcmp(word, 'sqrt') == 0 ||
-                strcmp(word, 'exp') == 0 || strcmp(word, 'pow') == 0 || strcmp(word, 'cot') == 0 ||
-                strcmp(word, 'sinh') == 0 || strcmp(word, 'cosh') == 0 || strcmp(word, 'tanh') == 0 || strcmp(word, 'log') == 0)
+            if (strcmp(word, "sin") == 0 || strcmp(word, "cos") == 0 || strcmp(word, "abs") == 0 ||
+                strcmp(word, "tan") == 0 || strcmp(word, "ln") == 0 || strcmp(word, "sqrt") == 0 ||
+                strcmp(word, "exp") == 0 || strcmp(word, "pow") == 0 || strcmp(word, "cot") == 0 ||
+                strcmp(word, "sinh") == 0 || strcmp(word, "cosh") == 0 || strcmp(word, "tanh") == 0 || strcmp(word, "log") == 0)
             {
                 tokens[token_count].type = function; // تابع
             }
@@ -108,9 +110,9 @@ int parentheses()
     int valid = 0;
     for (int i = 0; i < token_count; i++)
     {
-        if (tokens[i].type = paren_open)
+        if (tokens[i].type == paren_open)
             valid++;
-        else if (tokens[i].type = paren_close)
+        else if (tokens[i].type == paren_close)
             valid--;
         if (valid < 0)
             return 0;
@@ -141,9 +143,9 @@ postfix POSTFIX(token *tokens, int token_count)
             stack[++top] = tokens[i];
             break;
 
-        case opearator:
+        case operator:
             // وقتی عملگر با الویت بالاتر قبلش است. خارج میشه و به خروجی منتقل میشه
-            while (top >= 0 && stack[top].type == opearator)
+            while (top >= 0 && stack[top].type == operator)
             {
                 postfixs.output[postfixs.count++] = stack[top--];
             }
