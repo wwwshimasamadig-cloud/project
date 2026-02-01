@@ -11,7 +11,8 @@ typedef enum
     cell,
     paren_open,
     paren_close,
-    function
+    function,
+    invalid
 } tokentype;
 
 typedef struct
@@ -22,8 +23,6 @@ typedef struct
 } token;
 
 #define token_max 256
-token tokens[token_max];
-int token_count = 0;
 
 // توکن ها با ترتیبی قابل محاسبه
 typedef struct
@@ -34,7 +33,7 @@ typedef struct
 
 // توابع
 void tokenize(const char *expr);
-int parentheses();
+int valid_parentheses();
 postfix POSTFIX(token *tokens, int count);
 
 #endif
