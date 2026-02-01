@@ -4,14 +4,17 @@
 #include <string.h>
 #include <stdlib.h>
 #define max 100
+// ساختار ریاضی
 typedef struct{
     double (*fun1)(double);
     const char *name1;
 } funmath;
+// ساختار حافظه
 typedef struct{
     int most;
     double data[max];}
 memorystack;
+// خطاها
 typedef enum{
     devision_peroblem,
     domain_peroblem,
@@ -23,6 +26,7 @@ typedef enum{
     allocation_peroblem,
 }   erors;
 erors calculate(const char **input,int countinput,double *output);
+// توابع ریاضی
 double truth_log(double n);
 double truth_ln(double n); 
 double truth_sqrt(double n);
@@ -58,6 +62,7 @@ erors push(memorystack *sone, double value){
     sone->data[++(sone->most)] =value;
     return succetion;
 }
+//تابع مقداردهی استک
 void inistialzationstack(memorystack *sone){
     sone->most=-1;
 }
@@ -73,23 +78,26 @@ erors pop(memorystack *sone, double *value){
     }
     return log10(n);
 }
+// برای تابع لگاریتم بر مبنا عدد ای
 double safe_ln(double n){
     if (n<=0)
     {return NAN;}
     return log(n);}
+// برای تابع جذر
 double truth_sqrt(double n){
     if(n<0)
     {return NAN;
     }
     return sqrt(n)
 ;}
+// برای تابع کتانژانت
     double truth_cot(double x){
     double tan_val=tan(x);
     if (fabs(tan_val)<1e-15)
     {return NAN;
     }
     return 1.0/tan_val;
-}
+} 
 funmath math_functions[]={
     {"sin", truth_sin},
     {"cos", truth_cos},
