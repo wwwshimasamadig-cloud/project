@@ -622,41 +622,41 @@ funmath* findfun(const char *name1){
         {if (strcmp(name1,math_functions[i].name1) == 0) 
             {return &math_functions[i];}}
     return NULL; }
-    erors calculate(const char **input,int countinput,double *output){
+     erors calculate(const char **input,int countinput,double *output){
     memorystack stack;
     inistialzationstack(&stack);
     erors status;
     double action1,action2,value;
     for (int i=0; i<countinput; ++i)
-        {const char *token_str=input[i];
+        {const char *took=input[i];
         char *endptr;
-        value=strtod(token_str, &endptr);
-        if (*endptr == '\0' && token_str!= endptr)
+        value=strtod(input, &endptr);
+        if (*endptr == '\0' && input!= endptr)
             {if (push(&stack, value) != succetion) 
                 return action_peroblem;}
         else{
-            if (strcmp(token_str, "+") == 0){
+            if (strcmp(input, "+") == 0){
                 if (pop(&stack, &action2)!=succetion) 
                     return action_peroblem;
                     if (pop(&stack, &action1)!= succetion)
                     return action_peroblem;
                 if (push(&stack, action1 + action2)!=succetion)
                     return action_peroblem;
-            } else if(strcmp(token_str, "-")==0){
+            } else if(strcmp(input, "-")==0){
                 if (pop(&stack, &action2)!=succetion)
                     return action_peroblem;
                     if (pop(&stack, &action1)!=succetion)
                     return action_peroblem;
                 if (push(&stack, action1 -action2)!=succetion)
                     return action_peroblem;
-            } else if (strcmp(token_str, "*") == 0){
+            } else if (strcmp(input, "*") == 0){
                 if (pop(&stack, &action2)!=succetion)
                     return action_peroblem;
                     if (pop(&stack, &action1)  !=succetion)
                     return action_peroblem;
                 if(push(&stack, action1 * action2)!=succetion)
                     return action_peroblem;}
-            else if (strcmp(token_str, "/") == 0){
+            else if (strcmp(input, "/") == 0){
                 if (pop(&stack, &action2) != succetion)
                     return action_peroblem;
                 if (pop(&stack, &action1) != succetion)
@@ -666,7 +666,7 @@ funmath* findfun(const char *name1){
                 }
                 if (push(&stack,action1/action2)!=succetion) return action_peroblem;
             } else
-                {funmath *mf = findfun(token_str);
+                {funmath *mf =findfun(input);
                 if (mf != NULL)
                     {if (pop(&stack,&action1)!=succetion) 
                         return action_peroblem;
@@ -684,9 +684,26 @@ funmath* findfun(const char *name1){
     if (pop(&stack, output)!=succetion)
         {return phraise_peroblem;}
      if ( isnan(*output))
-        {return domain_peroblem ;}
-   
+        {return domain_peroblem
+    ;}
     return succetion;}}
+    double token_to_value(const char *token, sheet *sh) {
+    // اگر عدد است
+    char *endptr;
+    double val = strtod(token, &endptr);
+    if (*endptr == '\0') return val;
+    
+    // اگر سلول است
+    int row, col;
+    if (addressToNum(token, &row, &col)) {
+        Cell *cell = sheetFindCell(sh, row, col);
+        if (cell) return cell->value;
+        else return NAN;
+    }
+    
+    return NAN;  // نه عدد، نه سلول معتبر
+}
+
     //برای دسترسی به سلولی در سطری بزرگتر از اندازه کنونی جدول
 static int rowExpand(sheet *s, size_t expandedR ){
     if(!s )
