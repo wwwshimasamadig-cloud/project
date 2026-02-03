@@ -1,30 +1,59 @@
 #include <stdio.h>
-#include <ctype.h>
-#include <string.h>
 #include <stdlib.h>
+#include <string.h>
+#include <ctype.h>
 #include <math.h>
-#include "formula.h"
 
-token tokens[token_max];
-int token_count = 0;
+// انواع توکن
+typedef enum
+{
+    number,
+    operator,
+    cell,
+    paren_open,
+    paren_close,
+    function,
+    invalid
+} tokentype;
 
-// تابع کمکی برای تشخیص توابع ریاضی
-int mathfunction(const char *word)
+// ساختار توکن ها
+typedef struct
+{
+    tokentype type;
+    char string_value[32];
+    double numeric_value;
+} token;
+
+// ارایه ای از توکن ها
+#define token_max 256
+static token tokens[token_max];
+static int token_count = 0;
+
+// ارور هندلینگ : توکن نامعتبر -> 1
+static int token_error = 0;
+static char token_error_msg[256] = {0};
+
+typedef struct
+{
+    token output[token_max];
+    int count;
+} postfix;
+
+//  tokenize توابع کمکی برای تشخیص توابع ریاضی در
+static int mathfunction(const char *word)
 {
     if (!word)
         return 0;
-    const char *math_functions[] = {"sin", "cos", "tan", "cot", "sinh", "cosh", "tanh", "sqrt", "abs", "ln", "log", "exp", "pow"};
-    int functions_count = sizeof(math_functions) / sizeof(math_functions[0]);
-    for (int i = 0; i < functions_count; i++)
-    {
-        if (strcmp(word, math_functions[i]) == 0)
+    const char *list[] = {"sin", "cos", "tan", "cot", "sinh", "cosh", "tanh", "sqrt", "abs", "ln", "log", "exp", "pow"};
+    int n = (int)(sizeof(list) / sizeof(list[0]));
+    for (int i = 0; i < n; i++)
+        if (strcmp(word, list[i]) == 0)
             return 1;
-    }
     return 0;
 }
 
 // تشخیص اولویت عملگرها
-int precedence(char op)
+static int precedence(char op)
 {
     switch (op)
     {
@@ -44,42 +73,45 @@ int precedence(char op)
 /* این تابع،رشته فرمولی را می گیرد و تبدیل به توکن ها می  کند
 expr: همان رشته فرمولی که از کاربر گرفتیم
 توکن: اعداد ، توابع ، ادرس سلول ،عملگرها، پرانتزها */
-
 void tokenize(const char *expr)
 {
     int i = 0;
-    tokentype last_token_type = -1;
+    tokentype last_token_type = (tokentype)-1;
     token_count = 0;
+    token_error = 0;
+    token_error_msg[0] = '\0';
 
-    while (expr[i] != '\0')
+    while (expr[i] != '\0' && token_count < token_max)
     {
 
-        // رد کردن فاصله ها
-        if (isspace(expr[i]))
+        if (isspace((unsigned char)expr[i]))
         {
             i++;
             continue;
         }
 
-        // عدد(صحیح و اعشاری )
-        if (isdigit(expr[i]) || (expr[i] == '.' && isdigit(expr[i + 1])))
+        // اعداد (اعشاری و صحیح )
+        if (isdigit((unsigned char)expr[i]) || (expr[i] == '.' && isdigit((unsigned char)expr[i + 1])))
         {
             char num[32] = {0};
             int j = 0, dot_count = 0;
 
-            while (isdigit(expr[i]) || expr[i] == '.')
+            while ((isdigit((unsigned char)expr[i]) || expr[i] == '.') && j < 31)
             {
                 if (expr[i] == '.')
                 {
                     dot_count++;
                     if (dot_count > 1)
                     {
-                        break;
+                        token_error = 1;
+                        snwprintf(token_error_msg, sizeof(token_error_msg), "error : invalid number");
+                        return;
                     }
-                } // تعداد ممیزها غیرمجاز: پیغام خطا
+                }
                 num[j++] = expr[i++];
             }
             num[j] = '\0';
+
             strcpy(tokens[token_count].string_value, num);
             tokens[token_count].numeric_value = atof(num);
             tokens[token_count].type = number;
@@ -99,6 +131,7 @@ void tokenize(const char *expr)
             last_token_type = paren_open;
             continue;
         }
+
         // پرانتز بسته
         if (expr[i] == ')')
         {
@@ -108,6 +141,18 @@ void tokenize(const char *expr)
             token_count++;
             i++;
             last_token_type = paren_close;
+            continue;
+        }
+
+        //  pow (a,b) کاما برای
+        if (expr[i] == ',')
+        {
+            tokens[token_count].string_value[0] = ',';
+            tokens[token_count].string_value[1] = '\0';
+            tokens[token_count].type = operator;
+            token_count++;
+            i++;
+            last_token_type = operator;
             continue;
         }
 
@@ -134,63 +179,71 @@ void tokenize(const char *expr)
                 tokens[token_count].string_value[1] = '\0';
             }
             tokens[token_count].type = operator;
-            last_token_type = operator;
             token_count++;
             i++;
+            last_token_type = operator;
             continue;
         }
 
-        // ادرس سلول یا نام تابع
-        if (isalpha(expr[i]))
+        // ادرس سلول یا نام توابع ریاضی
+        if (isalpha((unsigned char)expr[i]))
         {
             char word[32] = {0};
             int j = 0;
-            while (isalpha(expr[i]))
-            {
-                word[j++] = expr[i++];
-            }
-            word[j] = '\0';
-            if (isdigit(expr[i]))
-            {
 
-                while (isdigit(expr[i]))
-                {
-                    if (j < 31)
-                        word[j++] = expr[i++];
-                    else
-                        i++;
-                }
+            while (isalpha((unsigned char)expr[i]) && j < 31)
+                word[j++] = expr[i++];
+            word[j] = '\0';
+
+            // اگر به دنبالش عدد باشه : ادرس سلول
+            if (isdigit((unsigned char)expr[i]))
+            {
+                while (isdigit((unsigned char)expr[i]) && j < 31)
+                    word[j++] = expr[i++];
                 word[j] = '\0';
 
                 strcpy(tokens[token_count].string_value, word);
-                tokens[token_count].type = cell; // سلول
+                tokens[token_count].type = cell;
                 token_count++;
                 last_token_type = cell;
+                continue;
             }
-            else if (mathfunction(word))
+
+            // اگر تابع کمکی خروجی غیر صفر بدهد : تابع ریاضی
+            if (mathfunction(word))
             {
                 strcpy(tokens[token_count].string_value, word);
-                tokens[token_count].type = function; // تابع
+                tokens[token_count].type = function;
                 token_count++;
                 last_token_type = function;
+                continue;
             }
-            else
-            {
-                strcpy(tokens[token_count].string_value, word);
-                tokens[token_count].type = invalid; // یک عبارت غیر مجاز
-                token_count++;
-            }
-            continue;
+
+            // عبارتی بجز این دو: پیغام خطا
+            token_error = 1;
+            snprintf(token_error_msg, sizeof(token_error_msg), "error: '%s' is an invalid input.", word);
+            return;
         }
-        // کارکتر ناشناخته
-        i++;
+
+        // کارکترهای ناشناخته
+        token_error = 1;
+        snprintf(token_error_msg, sizeof(token_error_msg),
+                 "error : '%c' is an invalid input. ", expr[i]);
+        return;
+    }
+
+    // تعداد بیش از حد توکن ها
+    if (token_count >= token_max)
+    {
+        token_error = 1;
+        snprintf(token_error_msg, sizeof(token_error_msg), "error: Too much inputs. ");
+        return;
     }
 }
 
-/*اعتبارسنجی پرانتزها
-اگر مقدار صفر را برگرداند باید پیغام خطا بدهد*/
-
-int valid_parentheses()
+// اعتبارسنجی پرانتز ها
+// خروجی : 0 -> پیغام خطا
+int valid_parentheses(void)
 {
     int valid = 0;
     for (int i = 0; i < token_count; i++)
@@ -204,21 +257,23 @@ int valid_parentheses()
     }
     return (valid == 0);
 }
-// دو تابع ارور هندلینگ در اینجا: چک کردن دو عملگر پشت سرهم و چک کردن سلول معتبر
-// در این تابع توکن ها به ترتیب قرار میگیرند تا قابل محاسبه باشند
+
+// این تابع توکن ها را به ترتیبی قرار میدهد که قابل محاسبه باشند
 postfix POSTFIX(token *tokens, int token_count)
 {
     token stack[token_max];
     int top = -1; // اندیس بالاترین عنصر: خالی است
-    postfix result = {.count = 0};
+    postfix result;
+    result.count = 0;
 
     for (int i = 0; i < token_count; i++)
     {
         token current = tokens[i];
+
         switch (current.type)
         {
 
-        // سلول یا عدد مستقیم به خروجی منتقل میشن.
+        // ادرس سلول یا اعداد مستقیما به خروجی منتقل میشن
         case number:
         case cell:
             result.output[result.count++] = current;
@@ -226,44 +281,55 @@ postfix POSTFIX(token *tokens, int token_count)
 
         // توابع به پشته ارسال میشن
         case function:
-            stack[++top] = tokens[i];
+            stack[++top] = current;
             break;
 
         case operator:
-            // وقتی عملگر با الویت بالاتر قبلش است. خارج میشه و به خروجی منتقل میشه
+        {
+
+            if (current.string_value[0] == ',')
+            {
+                while (top >= 0 && stack[top].type != paren_open)
+                {
+                    result.output[result.count++] = stack[top--];
+                }
+                break;
+            }
+
             while (top >= 0 && stack[top].type == operator && precedence(stack[top].string_value[0]) >= precedence(current.string_value[0]))
             {
                 result.output[result.count++] = stack[top--];
             }
-            // عملگر فعلی به پشته وارد میشود
             stack[++top] = current;
-            break;
+            break; // وقتی عملگر با الویت بالاتر قبلش هست؛ قبلی،خارج میشه و بعدش به پشته منتقل میشه
+        }
 
         // پرانتز باز به پشته منتقل می شود
         case paren_open:
             stack[++top] = current;
             break;
 
+        // عملگرها تا زمانی که به پرانتز باز برسیم؛ خارج می شوند
         case paren_close:
-            // عملگرها تا زمانی که به پرانتز باز برسیم به خروجی منتقل میشوند.
             while (top >= 0 && stack[top].type != paren_open)
             {
                 result.output[result.count++] = stack[top--];
             }
-            // پرانتز باز را از پشته حذف می کنیم
             if (top >= 0 && stack[top].type == paren_open)
-                top--;
-            // اگر تابعی بلافاصله بعد از پرانتز بیایید ان هم باید به خروجی منتقل شود: sin(A1+3)
+                top--; // پرانتز باز هم از پشته خارج می کنیم
             if (top >= 0 && stack[top].type == function)
+            {
                 result.output[result.count++] = stack[top--];
+            } // اگر تابعی بلافاصله بعد از پرانتز بیایید ان هم باید به خروجی منتقل شود: sin(A1+3)
+            break;
+
+        default:
             break;
         }
     }
-    // هرچه در پشته باقیمانده به خروجی اضافه می کنیم
-    while ((top >= 0))
-    {
-        result.output[result.count++] = stack[top--];
-    }
 
+    // هرچه در پشته باقیمانده به خروجی اضافه می کنیم
+    while (top >= 0)
+        result.output[result.count++] = stack[top--];
     return result;
 }
